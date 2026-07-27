@@ -294,6 +294,75 @@ outras seria criar regra de negócio que ninguém pediu.
 
 ---
 
+## Erro 8 — docker-entrypoint.sh com CRLF: "exec format error" e "no such file or directory"
+
+**Contexto.** Os Dockerfiles copiavam um `docker-entrypoint.sh` para dentro das
+imagens Linux. No Windows, todo arquivo criado no editor vem com `\r\n` (CRLF).
+
+**Sintoma 1 — "no such file or directory".** O Linux tentava executar o script,
+lia `#!/bin/sh\r` no primeiro ciclo, e falhava porque `/bin/sh\r` (com o `\r`)
+não existe. O nome errado faz parecer que o arquivo é que está ausente.
+
+**Tentativa 1.** Adicionei `sed -i 's/\r$//' ./docker-entrypoint.sh` no
+Dockerfile antes do `chmod`. O build rodou sem erros. Os containers ainda
+travavam.
+
+**Sintoma 2 — "exec format error".** O arquivo existia, o `sed` tinha rodado, e
+ainda assim o Linux recusava executar. Com `od -An -tx1`, vi os primeiros bytes:
+`ef bb bf 23 21 2f`. Os três primeiros (`ef bb bf`) são o BOM do UTF-8 — quando o
+PowerShell usa `[System.Text.Encoding]::UTF8`, ele inclui o BOM. Com BOM, o
+shebang `#!/bin/sh` começa no quarto byte, e o kernel não reconhece o formato.
+
+**Solução.** Trocar o encoder:
+
+```powershell
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+[System.IO.File]::WriteAllText("docker-entrypoint.sh", $conteudo, $utf8NoBom)
+```
+
+Confirmei com `od` que os primeiros bytes eram `23 21` (== `#!`) antes de fazer
+o rebuild. O `sed` no Dockerfile ficou como proteção extra para qualquer clone
+feito no Windows no futuro.
+
+**Lição.** São dois problemas diferentes com sintomas parecidos. `\r` invisível
+corrompe o nome do interpretador; BOM invisível corrompe o início do arquivo. O
+caminho para encontrar o segundo foi inspecionar os bytes brutos, não o conteúdo
+em texto.
+
+---
+
+## Erro 9 — volume do Postgres 18 no lugar errado
+
+Esse erro foi anterior ao build dos serviços NestJS, mas vale registrar.
+
+**Sintoma.** O `docker compose up` subia os containers do Postgres e eles
+paravam imediatamente com:
+
+```
+Error: in 18+, these Docker images are configured to store database data
+in a different location than before (previously: /var/lib/postgresql/data,
+now: /var/lib/postgresql)
+```
+
+**Causa.** A imagem `postgres:18-alpine` mudou o diretório de dados. O
+`docker-compose.yml` montava volume em `/var/lib/postgresql/data`, que a versão
+18 já não usa.
+
+**Solução.** Atualizar o ponto de montagem no compose:
+
+```yaml
+volumes:
+  - postgres-auth-data:/var/lib/postgresql   # era /var/lib/postgresql/data
+```
+
+E antes do primeiro up válido, limpar os volumes antigos:
+
+```bash
+docker compose down -v
+```
+
+---
+
 ## O que eu fiz para ter certeza de que entendo o código
 
 - Reescrevi na minha própria linguagem, em [defesa.md](defesa.md), o porquê de

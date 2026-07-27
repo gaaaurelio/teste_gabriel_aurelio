@@ -439,7 +439,7 @@ mudaram coisas recentes o suficiente para não estarem no treino do modelo.
 
 ### Onde o que foi gerado estava errado
 
-Cinco casos concretos, todos que eu só peguei porque rodei:
+Sete casos concretos, todos que eu só peguei porque rodei:
 
 **1. Scripts de instalação bloqueados pelo npm 11.** O `npm install` avisava
 `allow-scripts: 1 package has install scripts not yet covered` e seguia com
@@ -479,6 +479,23 @@ extensão `.js` apontando para arquivos `.ts`. O Jest não faz essa tradução e
 falhava com `Cannot find module './internal/class.js'`. A primeira sugestão da IA
 foi mexer no `tsconfig`, o que não tem efeito — o problema é do resolver do Jest,
 resolvido com `moduleNameMapper`.
+
+**6. CRLF e BOM nos entrypoints do Docker.** No Windows, todo arquivo de texto
+nasce com `\r\n`. O Linux lê `#!/bin/sh\r` e falha com "no such file or
+directory" — o `\r` invisível corrompeu o nome do interpretador. Depois de
+corrigir o CRLF com `sed -i 's/\r$//'` no Dockerfile, uma segunda falha: "exec
+format error". Inspecionando os bytes brutos com `od`, descobri que o PowerShell
+incluíra um BOM UTF-8 (`EF BB BF`) antes do `#!` — o kernel não reconheceu o
+formato. Solução: trocar o encoder no PowerShell para
+`New-Object System.Text.UTF8Encoding($false)` (sem BOM) e confirmar com `od`
+antes de rebuildar.
+
+**7. Volume do Postgres 18 no lugar errado.** A imagem `postgres:18-alpine`
+mudou o diretório de dados de `/var/lib/postgresql/data` para
+`/var/lib/postgresql`. O compose montava no path antigo; o container subia e
+morria com a mensagem de erro claramente documentada na imagem. Resolução:
+atualizar o ponto de montagem e limpar os volumes antigos com
+`docker compose down -v`.
 
 ### Duas coisas que eu levantei e a IA não
 

@@ -25,7 +25,10 @@ services:
       # 5433 no host para nao conflitar com um Postgres local na 5432.
       - '5433:5432'
     volumes:
-      - pgdata-auth:/var/lib/postgresql/data
+      # Postgres 18 mudou a convencao: agora espera o volume em /var/lib/postgresql
+      # (sem o /data) e cria o subdiretorio da versao por conta propria.
+      # Com /data o container falha alegando conflito de formato.
+      - pgdata-auth:/var/lib/postgresql
     healthcheck:
       # Sem isso o servico subiria e tentaria migrar antes do Postgres aceitar
       # conexao -- o container morreria no primeiro `docker compose up`.
@@ -47,7 +50,7 @@ services:
     ports:
       - '5434:5432'
     volumes:
-      - pgdata-main:/var/lib/postgresql/data
+      - pgdata-main:/var/lib/postgresql
     healthcheck:
       test:
         ['CMD-SHELL', 'pg_isready -U ${POSTGRES_MAIN_USER:-main_user} -d ${POSTGRES_MAIN_DB:-main_db}']

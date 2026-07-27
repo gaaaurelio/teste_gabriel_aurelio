@@ -35,7 +35,8 @@ COPY prisma.config.ts ./
 COPY docker-entrypoint.sh ./
 COPY --from=builder /app/dist ./dist
 
-RUN chmod +x ./docker-entrypoint.sh \
+RUN sed -i 's/\r$//' ./docker-entrypoint.sh \
+    && chmod +x ./docker-entrypoint.sh \
     && chown -R node:node /app
 
 USER node
