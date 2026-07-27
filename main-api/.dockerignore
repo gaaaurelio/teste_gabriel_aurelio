@@ -1,0 +1,11 @@
+node_modules
+dist
+coverage
+.env
+.env.*
+src/generated
+.agents
+.claude
+.windsurf
+skills-lock.json
+*.log

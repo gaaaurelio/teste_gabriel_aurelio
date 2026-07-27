@@ -1,0 +1,33 @@
+// Banco exclusivo do Main API. Nao ha tabela de usuarios aqui: a identidade do
+// usuario e responsabilidade do Auth Service, e o unico vinculo que guardamos
+// e o id que veio no payload do token (criadoPorId).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+  // O NestJS roda em CommonJS; sem isso o client e gerado em ESM e o require falha.
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Contratacao {
+  id           String   @id @default(uuid())
+  nomeCliente  String   @map("nome_cliente") @db.VarChar(120)
+  email        String   @db.VarChar(180)
+  produto      String   @db.VarChar(80)
+  // Guardado como texto com o mesmo valor exposto pela API ("em análise",
+  // com acento). Um enum nativo do Postgres precisaria de identificadores sem
+  // acento e exigiria uma traducao na borda HTTP; o dominio de valores e
+  // garantido pelo DTO e pelo service.
+  status       String   @db.VarChar(20)
+  criadoPorId  String   @map("criado_por_id")
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  // A listagem sempre filtra por status e ordena por data de criacao.
+  @@index([status, criadoEm])
+  @@map("contratacoes")
+}

@@ -1,0 +1,143 @@
+name: ramper-contratacoes
+
+# Todas as variaveis usam a forma ${VAR:-default}, entao `docker compose up
+# --build` funciona sem criar nenhum arquivo .env antes. Copie .env.example para
+# .env apenas se quiser sobrescrever algum valor.
+
+services:
+  # --------------------------------------------------------------------------
+  # Bancos: um container Postgres para cada servico.
+  #
+  # Dois containers em vez de um com dois schemas foi escolha deliberada. O
+  # ponto de separar servicos e que nenhum consegue ler a tabela do outro nem
+  # por acidente; com um Postgres compartilhado, bastaria alguem escrever o
+  # schema errado na connection string para furar essa fronteira.
+  # --------------------------------------------------------------------------
+  postgres-auth:
+    image: postgres:18-alpine
+    container_name: ramper-postgres-auth
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_AUTH_USER:-auth_user}
+      POSTGRES_PASSWORD: ${POSTGRES_AUTH_PASSWORD:-auth_pwd_dev}
+      POSTGRES_DB: ${POSTGRES_AUTH_DB:-auth_db}
+    ports:
+      # 5433 no host para nao conflitar com um Postgres local na 5432.
+      - '5433:5432'
+    volumes:
+      - pgdata-auth:/var/lib/postgresql/data
+    healthcheck:
+      # Sem isso o servico subiria e tentaria migrar antes do Postgres aceitar
+      # conexao -- o container morreria no primeiro `docker compose up`.
+      test:
+        ['CMD-SHELL', 'pg_isready -U ${POSTGRES_AUTH_USER:-auth_user} -d ${POSTGRES_AUTH_DB:-auth_db}']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  postgres-main:
+    image: postgres:18-alpine
+    container_name: ramper-postgres-main
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_MAIN_USER:-main_user}
+      POSTGRES_PASSWORD: ${POSTGRES_MAIN_PASSWORD:-main_pwd_dev}
+      POSTGRES_DB: ${POSTGRES_MAIN_DB:-main_db}
+    ports:
+      - '5434:5432'
+    volumes:
+      - pgdata-main:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        ['CMD-SHELL', 'pg_isready -U ${POSTGRES_MAIN_USER:-main_user} -d ${POSTGRES_MAIN_DB:-main_db}']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  # --------------------------------------------------------------------------
+  # MS 1 - Auth Service
+  # --------------------------------------------------------------------------
+  auth-service:
+    build:
+      context: ./auth-service
+    container_name: ramper-auth-service
+    restart: unless-stopped
+    environment:
+      PORT: 3001
+      # Host = nome do servico na rede do compose, porta interna 5432.
+      DATABASE_URL: postgresql://${POSTGRES_AUTH_USER:-auth_user}:${POSTGRES_AUTH_PASSWORD:-auth_pwd_dev}@postgres-auth:5432/${POSTGRES_AUTH_DB:-auth_db}?schema=public
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-troque-isto-em-producao}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1h}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-api-key-troque-isto-em-producao}
+      SEED_ON_BOOT: 'true'
+      CORS_ORIGINS: http://localhost:8080,http://localhost:5173
+    ports:
+      - '3001:3001'
+    depends_on:
+      postgres-auth:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://localhost:3001/health']
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 25s
+
+  # --------------------------------------------------------------------------
+  # MS 2 - Main API
+  # --------------------------------------------------------------------------
+  main-api:
+    build:
+      context: ./main-api
+    container_name: ramper-main-api
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_MAIN_USER:-main_user}:${POSTGRES_MAIN_PASSWORD:-main_pwd_dev}@postgres-main:5432/${POSTGRES_MAIN_DB:-main_db}?schema=public
+      # Comunicacao interna: nome de servico, nao localhost. Dentro do container
+      # "localhost" seria o proprio Main API.
+      AUTH_SERVICE_URL: http://auth-service:3001
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-api-key-troque-isto-em-producao}
+      AUTH_VALIDATE_TIMEOUT_MS: ${AUTH_VALIDATE_TIMEOUT_MS:-2000}
+      STATUS_UPDATE_DELAY_MS: ${STATUS_UPDATE_DELAY_MS:-1500}
+      CORS_ORIGINS: http://localhost:8080,http://localhost:5173
+    ports:
+      - '3000:3000'
+    depends_on:
+      postgres-main:
+        condition: service_healthy
+      # Nao depende do auth-service de proposito: os servicos sao independentes.
+      # O Main API sobe mesmo com o Auth fora do ar e responde 503 nas rotas
+      # autenticadas -- e exatamente esse comportamento que da para demonstrar
+      # parando o container do Auth.
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://localhost:3000/health']
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 25s
+
+  # --------------------------------------------------------------------------
+  # Frontend
+  # --------------------------------------------------------------------------
+  web:
+    build:
+      context: ./web
+      args:
+        # localhost, e nao nome de servico: quem faz estas chamadas e o
+        # navegador, que roda na maquina do host e nao ve a rede do compose.
+        VITE_AUTH_URL: http://localhost:3001
+        VITE_API_URL: http://localhost:3000
+    container_name: ramper-web
+    restart: unless-stopped
+    ports:
+      - '8080:80'
+    depends_on:
+      - auth-service
+      - main-api
+
+volumes:
+  pgdata-auth:
+  pgdata-main:

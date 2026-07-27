@@ -1,0 +1,23 @@
+// Banco exclusivo do Auth Service. Nenhuma outra aplicacao le ou escreve aqui.
+// A URL de conexao vem do prisma.config.ts, que le a env DATABASE_URL.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+  // O NestJS roda em CommonJS; sem isso o client e gerado em ESM e o require falha.
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("users")
+}

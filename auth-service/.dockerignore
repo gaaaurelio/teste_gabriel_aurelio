@@ -1,0 +1,14 @@
+node_modules
+dist
+coverage
+.env
+.env.*
+# Client gerado localmente. Deve ser recriado dentro da imagem, senao o build
+# poderia empacotar um client fora de sincronia com o schema.prisma.
+src/generated
+# Documentacao offline instalada pelo `prisma init`.
+.agents
+.claude
+.windsurf
+skills-lock.json
+*.log

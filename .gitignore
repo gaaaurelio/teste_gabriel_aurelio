@@ -1,0 +1,27 @@
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Variaveis reais de ambiente. O que vai versionado e o .env.example.
+.env
+.env.local
+.env.*.local
+
+# Client do Prisma: e codigo gerado a partir do schema.prisma, recriado
+# no build (inclusive dentro do Docker). Versionar isso geraria conflito
+# em toda alteracao de schema.
+**/src/generated/
+
+# Documentacao offline que o `prisma init` instala para agentes de IA.
+.agents/
+.claude/
+.windsurf/
+skills-lock.json
+
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+npm-debug.log*

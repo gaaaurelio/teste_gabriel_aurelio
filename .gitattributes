@@ -1,0 +1,7 @@
+# O entrypoint dos containers e um shell script executado por Linux. Se o Git
+# converter para CRLF ao clonar no Windows, o container falha com um erro
+# enigmatico do tipo "exec ./docker-entrypoint.sh: no such file or directory"
+# (o \r vira parte do nome do interpretador).
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.yml text eol=lf
