@@ -520,18 +520,3 @@ strict mode, rodei as 16 asserções dos testes, subi a stack do zero com
 do enunciado à mão — inclusive derrubando o container do Auth para confirmar o
 503. Onde o comportamento não era óbvio pelo código, escrevi um teste para
 descrevê-lo.
-
----
-
-## O que eu faria com mais tempo
-
-- **`CHECK constraint` no status**, para fechar a brecha de escrita direta no
-  banco por fora da aplicação.
-- **Refresh token com cookie `httpOnly`**, com os serviços atrás de um reverse
-  proxy no mesmo domínio, eliminando o trade-off do `localStorage`.
-- **Testes e2e** subindo os dois serviços com Testcontainers, cobrindo o fluxo
-  login → criar → transição bloqueada de ponta a ponta.
-- **Observabilidade**: request id propagado do frontend até o Auth Service, para
-  conseguir seguir um request pelos dois serviços em um log só.
-- **Rate limit no `/auth/login`**, que hoje aceita tentativas ilimitadas.
-- **Paginação na listagem**, que hoje devolve tudo.
