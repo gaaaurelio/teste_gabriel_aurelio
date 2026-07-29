@@ -25,3 +25,6 @@ skills-lock.json
 .DS_Store
 Thumbs.db
 npm-debug.log*
+
+# Documentacao de apoio pessoal — nao vai para o repositorio
+docs/
