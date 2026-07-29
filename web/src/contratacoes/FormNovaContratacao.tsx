@@ -28,9 +28,7 @@ export function FormNovaContratacao({ onEnviar, enviando }: Props) {
   }
 
   return (
-    <form className="cartao form-nova" onSubmit={aoEnviar}>
-      <h2>Nova contratacao</h2>
-
+    <form className="form-nova" onSubmit={aoEnviar}>
       <div className="form-nova__campos">
         <label className="campo">
           <span>Nome do cliente</span>
@@ -71,14 +69,19 @@ export function FormNovaContratacao({ onEnviar, enviando }: Props) {
         </label>
       </div>
 
-      <button type="submit" className="botao botao--primario" disabled={enviando}>
-        {enviando ? 'Criando...' : 'Criar contratacao'}
-      </button>
-
-      <p className="texto-secundario">
-        Toda contratacao nasce com status <strong>solicitado</strong> — quem
-        define isso e o servidor, nao o formulario.
+      <p className="texto-secundario" style={{ margin: 0 }}>
+        Toda contratação nasce com status <strong>solicitado</strong> — o
+        servidor define isso, não o formulário.
       </p>
+
+      <button
+        type="submit"
+        className="botao botao--primario"
+        disabled={enviando}
+        style={{ alignSelf: 'flex-end', marginTop: '0.25rem' }}
+      >
+        {enviando ? 'Criando...' : 'Criar contratação'}
+      </button>
     </form>
   );
 }

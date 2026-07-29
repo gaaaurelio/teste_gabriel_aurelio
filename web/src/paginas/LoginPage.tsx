@@ -27,7 +27,7 @@ export function LoginPage() {
       setErro(
         falha instanceof Error
           ? falha.message
-          : 'Nao foi possivel entrar. Tente novamente.',
+          : 'Não foi possível entrar. Tente novamente.',
       );
     } finally {
       setEnviando(false);
@@ -36,13 +36,15 @@ export function LoginPage() {
 
   return (
     <div className="login">
-      <form className="cartao login__form" onSubmit={aoEnviar}>
+      <form className="login__form" onSubmit={aoEnviar}>
+        <div className="login__logo">
+          <span className="login__logo-icon">R</span>
+          <span className="login__logo-text">Ramper</span>
+        </div>
+
         <header className="login__cabecalho">
-          <span className="marca">Ramper</span>
-          <h1>Contratacao de produtos</h1>
-          <p className="texto-secundario">
-            Entre para acompanhar e movimentar as contratacoes.
-          </p>
+          <h1>Bem-vindo de volta</h1>
+          <p>Entre para acompanhar e movimentar as contratações.</p>
         </header>
 
         <label className="campo">
@@ -52,6 +54,7 @@ export function LoginPage() {
             value={email}
             onChange={(evento) => setEmail(evento.target.value)}
             autoComplete="username"
+            placeholder="seu@email.com"
             required
           />
         </label>
@@ -63,6 +66,7 @@ export function LoginPage() {
             value={senha}
             onChange={(evento) => setSenha(evento.target.value)}
             autoComplete="current-password"
+            placeholder="••••••••"
             required
           />
         </label>
@@ -77,8 +81,8 @@ export function LoginPage() {
           {enviando ? 'Entrando...' : 'Entrar'}
         </button>
 
-        <p className="login__dica texto-secundario">
-          Usuarios criados pelo seed: <code>admin@ramper.com</code> e{' '}
+        <p className="login__dica">
+          Usuários do seed: <code>admin@ramper.com</code> e{' '}
           <code>analista@ramper.com</code>, senha <code>ramper123</code>.
         </p>
       </form>

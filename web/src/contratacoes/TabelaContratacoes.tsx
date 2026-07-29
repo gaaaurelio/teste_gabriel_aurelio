@@ -23,7 +23,7 @@ export function TabelaContratacoes({
   if (contratacoes.length === 0) {
     return (
       <p className="vazio texto-secundario">
-        Nenhuma contratacao para o filtro selecionado.
+        Nenhuma contratação para o filtro selecionado.
       </p>
     );
   }
@@ -37,12 +37,11 @@ export function TabelaContratacoes({
             <th>Produto</th>
             <th>Status</th>
             <th>Mudar para</th>
-            <th aria-label="Acoes" />
+            <th aria-label="Ações" />
           </tr>
         </thead>
         <tbody>
           {contratacoes.map((contratacao) => {
-            // Enquanto o servidor nao confirma, a linha inteira fica travada.
             const travada = idsEmAndamento.has(contratacao.id);
 
             return (
@@ -66,9 +65,7 @@ export function TabelaContratacoes({
                     {contratacao.status}
                   </span>
                   {travada && (
-                    <span className="salvando texto-secundario">
-                      salvando...
-                    </span>
+                    <span className="salvando">salvando...</span>
                   )}
                 </td>
 
@@ -89,10 +86,6 @@ export function TabelaContratacoes({
                       ))}
                     </select>
 
-                    {/*
-                      Atalhos que tornam facil reproduzir o cenario de clique
-                      duplo descrito no enunciado.
-                    */}
                     <button
                       type="button"
                       className="botao botao--pequeno"
